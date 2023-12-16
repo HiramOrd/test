@@ -1,42 +1,43 @@
-//
-//  HiramOmeTest.swift
-//  HiramOmeTest
-//
-//  Created by Hiram Ordoñez on 16/12/23.
-//
-
 import WidgetKit
 import SwiftUI
 
 struct Provider: TimelineProvider {
     func placeholder(in context: Context) -> SimpleEntry {
-        SimpleEntry(date: Date(), emoji: "😀")
+        SimpleEntry(date: Date(), emojis: ["😀"])
     }
 
     func getSnapshot(in context: Context, completion: @escaping (SimpleEntry) -> ()) {
-        let entry = SimpleEntry(date: Date(), emoji: "😀")
+        let entry = SimpleEntry(date: Date(), emojis: ["😀"])
         completion(entry)
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<Entry>) -> ()) {
         var entries: [SimpleEntry] = []
+        
+        let entry = SimpleEntry(date: Date(), emojis: [Date().formatted()])
+        entries.append(entry)
 
-        // Generate a timeline consisting of five entries an hour apart, starting from the current date.
-        let currentDate = Date()
-        for hourOffset in 0 ..< 5 {
-            let entryDate = Calendar.current.date(byAdding: .hour, value: hourOffset, to: currentDate)!
-            let entry = SimpleEntry(date: entryDate, emoji: "😀")
-            entries.append(entry)
+        // Accede a los valores almacenados en UserDefaults
+        let userDefaults = UserDefaults(suiteName: "group.hiram.test23") // Reemplaza con tu suiteName
+        if let storedEmojis = userDefaults?.array(forKey: "storedEmojis") as? [String] {
+            // Genera una entrada para cada valor almacenado
+            for emoji in storedEmojis {
+                let entry = SimpleEntry(date: Date(), emojis: [emoji])
+                entries.append(entry)
+            }
         }
 
-        let timeline = Timeline(entries: entries, policy: .atEnd)
+        // Configura la actualización del widget cada 5 minutos
+        let currentDate = Date()
+        let refreshDate = Calendar.current.date(byAdding: .second, value: 20, to: currentDate) ?? currentDate
+        let timeline = Timeline(entries: entries, policy: .after(refreshDate))
         completion(timeline)
     }
 }
 
 struct SimpleEntry: TimelineEntry {
     let date: Date
-    let emoji: String
+    let emojis: [String]
 }
 
 struct HiramOmeTestEntryView : View {
@@ -44,11 +45,10 @@ struct HiramOmeTestEntryView : View {
 
     var body: some View {
         VStack {
-            Text("Test:")
-            Text(entry.date, style: .time)
-
-            Text("Emoji:")
-            Text(entry.emoji)
+            Text("Emojis:")
+            ForEach(entry.emojis, id: \.self) { emoji in
+                Text(emoji)
+            }
         }
     }
 }
@@ -75,6 +75,6 @@ struct HiramOmeTest: Widget {
 #Preview(as: .systemSmall) {
     HiramOmeTest()
 } timeline: {
-    SimpleEntry(date: .now, emoji: "😀")
-    SimpleEntry(date: .now, emoji: "🤩")
+    SimpleEntry(date: .now, emojis: ["😀"])
+    SimpleEntry(date: .now, emojis: ["🤩"])
 }
